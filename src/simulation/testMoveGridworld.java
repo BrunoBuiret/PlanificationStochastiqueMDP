@@ -12,6 +12,15 @@ public class testMoveGridworld {
      * @param args
      */
     public static void main(String[] args) {
+        try
+        {
+            javax.swing.UIManager.setLookAndFeel(javax.swing.UIManager.getSystemLookAndFeelClassName());
+        }
+        catch(ClassNotFoundException|InstantiationException|IllegalAccessException|javax.swing.UnsupportedLookAndFeelException e)
+        {
+            java.util.logging.Logger.getLogger(testMoveGridworld.class.getName()).log(java.util.logging.Level.SEVERE, e.getMessage(), e);
+        }
+        
         SwingUtilities.invokeLater(new Runnable() {
             public void run() {
                 //instanciation du modele MDP

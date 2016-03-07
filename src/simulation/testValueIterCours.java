@@ -13,6 +13,15 @@ public class testValueIterCours {
      * @param args
      */
     public static void main(String[] args) {
+        try
+        {
+            javax.swing.UIManager.setLookAndFeel(javax.swing.UIManager.getSystemLookAndFeelClassName());
+        }
+        catch(ClassNotFoundException|InstantiationException|IllegalAccessException|javax.swing.UnsupportedLookAndFeelException e)
+        {
+            java.util.logging.Logger.getLogger(testValueIterCours.class.getName()).log(java.util.logging.Level.SEVERE, e.getMessage(), e);
+        }
+        
         SwingUtilities.invokeLater(new Runnable() {
             public void run() {
 
