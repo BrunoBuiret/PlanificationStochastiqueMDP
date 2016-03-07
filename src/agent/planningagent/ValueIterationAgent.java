@@ -1,14 +1,17 @@
 package agent.planningagent;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-
 import environnement.Action;
 import environnement.Etat;
 import environnement.MDP;
 import environnement.gridworld.ActionGridworld;
+import environnement.gridworld.GridworldMDP;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Cet agent met a jour sa fonction de valeur avec value iteration et choisit
@@ -24,7 +27,9 @@ public class ValueIterationAgent extends PlanningValueAgent {
      */
     protected double gamma;
     //*** VOTRE CODE
-
+    
+    protected Map<Etat, Double> v;
+    
     /**
      *
      * @param gamma
@@ -33,8 +38,9 @@ public class ValueIterationAgent extends PlanningValueAgent {
     public ValueIterationAgent(double gamma, MDP mdp) {
         super(mdp);
         this.gamma = gamma;
-        //*** VOTRE CODE
-
+      
+        v = new HashMap<Etat, Double>();
+   
     }
 
     public ValueIterationAgent(MDP mdp) {
@@ -53,7 +59,36 @@ public class ValueIterationAgent extends PlanningValueAgent {
         //delta < epsilon
         this.delta = 0.0;
         //*** VOTRE CODE
+        
+        List<Etat> listeEtats = this.getMdp().getEtatsAccessibles();
+        
+        Map<Etat, Double> nouveauV = new HashMap<>();
+        
+        for (Etat e : listeEtats) {
+            List<Action> listeActions = this.getMdp().getActionsPossibles(e);
+            
+            Double meilleureAction = 0.;
+            
+            for (Action a : listeActions) {
+                try {
+                    Map<Etat, Double> listetransitions = this.getMdp().getEtatTransitionProba(e, a);
+                    Double somme = 0.;
+                    
+                    for (Map.Entry<Etat, Double> s : listetransitions.entrySet()) {
+                        somme += s.getValue() * (this.getMdp().getRecompense(e, a, s.getKey()) + this.gamma * this.v.get(e));
+                    }
+                    
+                    if (somme > meilleureAction) {
+                        meilleureAction = somme;
+                    }
+                 
+                } catch (Exception ex) {
+                    Logger.getLogger(ValueIterationAgent.class.getName()).log(Level.SEVERE, null, ex);
+                }
 
+            }
+        }
+        
         // mise a jour vmax et vmin pour affichage du gradient de couleur:
         //vmax est la valeur de max pour tout s de V
         //vmin est la valeur de min pour tout s de V
@@ -67,9 +102,8 @@ public class ValueIterationAgent extends PlanningValueAgent {
      */
     @Override
     public Action getAction(Etat e) {
-        //*** VOTRE CODE
-
-        return null;
+        
+        return this.getPolitique(e).get(0);
     }
 
     @Override
@@ -96,8 +130,14 @@ public class ValueIterationAgent extends PlanningValueAgent {
     @Override
     public void reset() {
         super.reset();
-        //*** VOTRE CODE
+        
+        this.v.clear();
+        
+        List<Etat> listeEtats = this.getMdp().getEtatsAccessibles();
 
+        for (Etat e : listeEtats) {
+            this.v.put(e, 0.);
+        }
         /*-----------------*/
         this.notifyObs();
 
