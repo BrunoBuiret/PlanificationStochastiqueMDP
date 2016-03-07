@@ -1,12 +1,12 @@
 package agent.planningagent;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import environnement.Action;
 import environnement.Etat;
 import environnement.MDP;
 import environnement.gridworld.ActionGridworld;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
 
 /**
  * Cet agent choisit une action aleatoire parmi toutes les autorisees dans
@@ -23,9 +23,9 @@ public class AgentRandom extends PlanningValueAgent {
 
     @Override
     public Action getAction(Etat e) {
-        //*** VOTRE CODE
-
-        return null;
+        List<Action> list = this.getMdp().getActionsPossibles(e);
+        
+        return list.size() > 0 ? list.get(this.rand.nextInt(list.size())) : null;
 
     }
 
@@ -36,9 +36,9 @@ public class AgentRandom extends PlanningValueAgent {
 
     @Override
     public List<Action> getPolitique(Etat _e) {
-        //*** VOTRE CODE
+        List<Action> list = this.getMdp().getActionsPossibles(_e);
 
-        return null;
+        return list;
     }
 
     @Override
