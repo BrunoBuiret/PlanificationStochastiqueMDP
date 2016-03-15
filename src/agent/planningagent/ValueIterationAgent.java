@@ -3,13 +3,11 @@ package agent.planningagent;
 import environnement.Action;
 import environnement.Etat;
 import environnement.MDP;
-import environnement.gridworld.ActionGridworld;
-import environnement.gridworld.GridworldMDP;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -27,9 +25,9 @@ public class ValueIterationAgent extends PlanningValueAgent {
      */
     protected double gamma;
     //*** VOTRE CODE
-    
+
     protected Map<Etat, Double> v;
-    
+
     /**
      *
      * @param gamma
@@ -38,9 +36,9 @@ public class ValueIterationAgent extends PlanningValueAgent {
     public ValueIterationAgent(double gamma, MDP mdp) {
         super(mdp);
         this.gamma = gamma;
-      
-        v = new HashMap<Etat, Double>();
-   
+
+        this.v = new HashMap<>();
+        this.reset();
     }
 
     public ValueIterationAgent(MDP mdp) {
@@ -59,51 +57,78 @@ public class ValueIterationAgent extends PlanningValueAgent {
         //delta < epsilon
         this.delta = 0.0;
         //*** VOTRE CODE
-        
+
         List<Etat> listeEtats = this.getMdp().getEtatsAccessibles();
-        
+
         Map<Etat, Double> nouveauV = new HashMap<>();
-        
+
         for (Etat e : listeEtats) {
             List<Action> listeActions = this.getMdp().getActionsPossibles(e);
-            
             Double meilleureAction = 0.;
-            
+
             for (Action a : listeActions) {
                 try {
                     Map<Etat, Double> listetransitions = this.getMdp().getEtatTransitionProba(e, a);
                     Double somme = 0.;
-                    
+
                     for (Map.Entry<Etat, Double> s : listetransitions.entrySet()) {
-                        somme += s.getValue() * (this.getMdp().getRecompense(e, a, s.getKey()) + this.gamma * this.v.get(e));
+                        // s == Etat e
+                        // a == Action a
+                        // s' == Etat s.getKey()
+                        somme += s.getValue() * (this.getMdp().getRecompense(e, a, s.getKey()) + this.gamma * this.v.get(s.getKey()));
                     }
-                    
+
                     if (somme > meilleureAction) {
                         meilleureAction = somme;
                     }
-                 
                 } catch (Exception ex) {
                     Logger.getLogger(ValueIterationAgent.class.getName()).log(Level.SEVERE, null, ex);
                 }
+            }
 
+            // Mise à jour de V_k
+            nouveauV.put(e, meilleureAction);
+        }
+
+        // Mise à jour du delta
+        double deltaTest;
+        
+        for(Etat e : listeEtats) {
+            deltaTest = Math.abs(this.v.get(e) - nouveauV.get(e));
+            
+            if(this.delta < deltaTest) {
+                this.delta = deltaTest;
             }
         }
         
+        // Mémorisation de V_k
+        this.v = nouveauV;
+
         // mise a jour vmax et vmin pour affichage du gradient de couleur:
         //vmax est la valeur de max pour tout s de V
         //vmin est la valeur de min pour tout s de V
-        // ...
+        for (Map.Entry<Etat, Double> s : this.v.entrySet()) {
+            if(this.vmin > s.getValue()) {
+                this.vmin = s.getValue();
+            }
+            
+            if(this.vmax < s.getValue()) {
+                this.vmax = s.getValue();
+            }
+        }
+        
         //******************* a laisser a la fin de la methode
         this.notifyObs();
     }
 
     /**
      * renvoi l'action executee par l'agent dans l'etat e
+     * @param e
+     * @return 
      */
     @Override
     public Action getAction(Etat e) {
-        
-        return this.getPolitique(e).get(0);
+        return this.getPolitique(e).size() > 0 ? this.getPolitique(e).get(0) : null;
     }
 
     @Override
@@ -117,22 +142,43 @@ public class ValueIterationAgent extends PlanningValueAgent {
      * renvoi la (les) action(s) de plus forte(s) valeur(s) dans l'etat e
      * (plusieurs actions sont renvoyees si valeurs identiques, liste vide si
      * aucune action n'est possible)
+     * @param _e
+     * @return 
      */
     @Override
     public List<Action> getPolitique(Etat _e) {
-        List<Action> l = new ArrayList<Action>();
-        //*** VOTRE CODE
-
-        return l;
-
+        List<Action> actionsPossibles = this.getMdp().getActionsPossibles(_e), politique = new ArrayList<>();
+        double topV = 0;
+        
+        for(Action a : actionsPossibles) {
+            try {
+                Map<Etat, Double> transitions = this.getMdp().getEtatTransitionProba(_e, a);
+                Set<Etat> etats = transitions.keySet();
+                
+                for(Etat e : etats) {
+                    if(this.v.get(e) > topV) {
+                        topV = this.v.get(e);
+                        politique.clear();
+                        politique.add(a);
+                    }
+                    else if(this.v.get(e) == topV) {
+                        politique.add(a);
+                    }
+                }
+            } catch (Exception ex) {
+                Logger.getLogger(ValueIterationAgent.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+        
+        return politique;
     }
 
     @Override
     public void reset() {
         super.reset();
-        
+
         this.v.clear();
-        
+
         List<Etat> listeEtats = this.getMdp().getEtatsAccessibles();
 
         for (Etat e : listeEtats) {
@@ -140,12 +186,10 @@ public class ValueIterationAgent extends PlanningValueAgent {
         }
         /*-----------------*/
         this.notifyObs();
-
     }
 
     @Override
     public void setGamma(double arg0) {
         this.gamma = arg0;
     }
-
 }
