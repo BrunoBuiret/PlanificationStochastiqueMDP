@@ -59,48 +59,54 @@ public class ValueIterationAgent extends PlanningValueAgent {
         //*** VOTRE CODE
 
         List<Etat> listeEtats = this.getMdp().getEtatsAccessibles();
-
         Map<Etat, Double> nouveauV = new HashMap<>();
 
         for (Etat e : listeEtats) {
-            List<Action> listeActions = this.getMdp().getActionsPossibles(e);
-            Double meilleureAction = 0.;
+            if(!this.getMdp().estAbsorbant(e))
+            {
+                List<Action> listeActions = this.getMdp().getActionsPossibles(e);
+                double meilleureAction = -Double.MAX_VALUE; // ATTENTION
 
-            for (Action a : listeActions) {
-                try {
-                    Map<Etat, Double> listetransitions = this.getMdp().getEtatTransitionProba(e, a);
-                    Double somme = 0.;
+                for (Action a : listeActions) {
+                    try {
+                        Map<Etat, Double> listetransitions = this.getMdp().getEtatTransitionProba(e, a);
+                        Double somme = 0.;
 
-                    for (Map.Entry<Etat, Double> s : listetransitions.entrySet()) {
-                        // s == Etat e
-                        // a == Action a
-                        // s' == Etat s.getKey()
-                        somme += s.getValue() * (this.getMdp().getRecompense(e, a, s.getKey()) + this.gamma * this.v.get(s.getKey()));
+                        for (Map.Entry<Etat, Double> s : listetransitions.entrySet()) {
+                            // s == Etat e
+                            // a == Action a
+                            // s' == Etat s.getKey()
+                            somme += s.getValue() * (this.getMdp().getRecompense(e, a, s.getKey()) + this.gamma * this.v.get(s.getKey()));
+                        }
+
+                        if (somme > meilleureAction) {
+                            meilleureAction = somme;
+                        }
+                    } catch (Exception ex) {
+                        Logger.getLogger(ValueIterationAgent.class.getName()).log(Level.SEVERE, null, ex);
                     }
-
-                    if (somme > meilleureAction) {
-                        meilleureAction = somme;
-                    }
-                } catch (Exception ex) {
-                    Logger.getLogger(ValueIterationAgent.class.getName()).log(Level.SEVERE, null, ex);
                 }
-            }
 
-            // Mise à jour de V_k
-            nouveauV.put(e, meilleureAction);
+                // Mise à jour de V_k
+                nouveauV.put(e, meilleureAction);
+            }
+            else
+            {
+                nouveauV.put(e, 0.);
+            }
         }
 
         // Mise à jour du delta
         double deltaTest;
-        
-        for(Etat e : listeEtats) {
+
+        for (Etat e : listeEtats) {
             deltaTest = Math.abs(this.v.get(e) - nouveauV.get(e));
-            
-            if(this.delta < deltaTest) {
+
+            if (this.delta < deltaTest) {
                 this.delta = deltaTest;
             }
         }
-        
+
         // Mémorisation de V_k
         this.v = nouveauV;
 
@@ -108,23 +114,24 @@ public class ValueIterationAgent extends PlanningValueAgent {
         //vmax est la valeur de max pour tout s de V
         //vmin est la valeur de min pour tout s de V
         for (Map.Entry<Etat, Double> s : this.v.entrySet()) {
-            if(this.vmin > s.getValue()) {
+            if (this.vmin > s.getValue()) {
                 this.vmin = s.getValue();
             }
-            
-            if(this.vmax < s.getValue()) {
+
+            if (this.vmax < s.getValue()) {
                 this.vmax = s.getValue();
             }
         }
-        
+
         //******************* a laisser a la fin de la methode
         this.notifyObs();
     }
 
     /**
      * renvoi l'action executee par l'agent dans l'etat e
+     *
      * @param e
-     * @return 
+     * @return
      */
     @Override
     public Action getAction(Etat e) {
@@ -135,44 +142,64 @@ public class ValueIterationAgent extends PlanningValueAgent {
     public double getValeur(Etat _e) {
         //*** VOTRE CODE
 
-        return 0.0;
+        return this.v.getOrDefault(_e, 0.);
     }
 
     /**
      * renvoi la (les) action(s) de plus forte(s) valeur(s) dans l'etat e
      * (plusieurs actions sont renvoyees si valeurs identiques, liste vide si
      * aucune action n'est possible)
+     *
      * @param _e
-     * @return 
+     * @return
      */
     @Override
     public List<Action> getPolitique(Etat _e) {
-        List<Action> actionsPossibles = this.getMdp().getActionsPossibles(_e), politique = new ArrayList<>();
-        double topV = 0;
-        
-        for(Action a : actionsPossibles) {
+        Map<Action, Double> resultats = new HashMap<>();
+        List<Action> listeActions = this.getMdp().getActionsPossibles(_e);
+
+        for (Action a : listeActions) {
             try {
-                Map<Etat, Double> transitions = this.getMdp().getEtatTransitionProba(_e, a);
-                Set<Etat> etats = transitions.keySet();
-                
-                for(Etat e : etats) {
-                    if(this.v.get(e) > topV) {
-                        topV = this.v.get(e);
-                        politique.clear();
-                        politique.add(a);
-                    }
-                    else if(this.v.get(e) == topV) {
-                        politique.add(a);
-                    }
+                Map<Etat, Double> listeTransitions = this.getMdp().getEtatTransitionProba(_e, a);
+                Double somme = 0.;
+
+                for (Map.Entry<Etat, Double> s : listeTransitions.entrySet()) {
+                    // s == Etat e
+                    // a == Action a
+                    // s' == Etat s.getKey()
+                    somme += s.getValue() * (this.getMdp().getRecompense(_e, a, s.getKey()) + this.gamma * this.v.get(s.getKey()));
                 }
+
+                resultats.put(a, somme);
             } catch (Exception ex) {
                 Logger.getLogger(ValueIterationAgent.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
         
-        return politique;
+        // Trouver les meilleures actions
+        List<Action> meilleuresActions = new ArrayList<>();
+        double topV = -Double.MAX_VALUE; // ATTENTION
+        
+        for(Map.Entry<Action, Double> entry : resultats.entrySet())
+        {
+            if(entry.getValue() > topV)
+            {
+                topV = entry.getValue();
+                meilleuresActions.clear();
+                meilleuresActions.add(entry.getKey());
+            }
+            else if(entry.getValue() == topV)
+            {
+                meilleuresActions.add(entry.getKey());
+            }
+        }
+        
+        return meilleuresActions;
     }
 
+    /**
+     * 
+     */
     @Override
     public void reset() {
         super.reset();
@@ -188,6 +215,9 @@ public class ValueIterationAgent extends PlanningValueAgent {
         this.notifyObs();
     }
 
+    /**
+     * 
+     */
     @Override
     public void setGamma(double arg0) {
         this.gamma = arg0;
