@@ -10,39 +10,70 @@ import java.util.List;
  * chaque etat
  *
  * @author lmatignon
- *
+ * @author Bruno Buiret (bruno.buiret@etu.univ-lyon1.fr)
+ * @author Thomas Arnaud (thomas.arnaud@etu.univ-lyon1.fr)
  */
-public class AgentRandom extends PlanningValueAgent {
-    public AgentRandom(MDP _m) {
+public class AgentRandom extends PlanningValueAgent
+{
+    /**
+     * 
+     * @param _m 
+     */
+    public AgentRandom(MDP _m)
+    {
         super(_m);
     }
-
+    
+    /**
+     * 
+     * @param e
+     * @return 
+     */
     @Override
-    public Action getAction(Etat e) {
+    public Action getAction(Etat e)
+    {
         List<Action> list = this.getPolitique(e);
-        
+
         return list.size() > 0 ? list.get(this.rand.nextInt(list.size())) : null;
     }
 
+    /**
+     * 
+     * @param _e
+     * @return 
+     */
     @Override
-    public double getValeur(Etat _e) {
+    public double getValeur(Etat _e)
+    {
         return 0.0;
     }
 
+    /**
+     * 
+     * @param _e
+     * @return 
+     */
     @Override
-    public List<Action> getPolitique(Etat _e) {
-        List<Action> list = this.getMdp().getActionsPossibles(_e);
-
-        return list;
+    public List<Action> getPolitique(Etat _e)
+    {
+        return this.getMdp().getActionsPossibles(_e);
     }
 
+    /**
+     * 
+     */
     @Override
-    public void updateV() {
-        System.out.println("l'agent random ne planifie pas");
+    public void updateV()
+    {
+        System.out.println("L'agent random ne planifie pas.");
     }
 
+    /**
+     * 
+     * @param gamma 
+     */
     @Override
-    public void setGamma(double parseDouble) {
-        // TODO Auto-generated method stub
+    public void setGamma(double gamma)
+    {
     }
 }
