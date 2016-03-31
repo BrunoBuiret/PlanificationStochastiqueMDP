@@ -19,7 +19,7 @@ public class AgentRandom extends PlanningValueAgent {
 
     @Override
     public Action getAction(Etat e) {
-        List<Action> list = this.getMdp().getActionsPossibles(e);
+        List<Action> list = this.getPolitique(e);
         
         return list.size() > 0 ? list.get(this.rand.nextInt(list.size())) : null;
     }
